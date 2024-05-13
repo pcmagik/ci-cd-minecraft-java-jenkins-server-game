@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
+        REPO = 'https://github.com/USERNAME/minecraft-server.git'
         IMAGE_NAME = 'minecraft-server:latest'
     }
     stages {
@@ -35,17 +35,19 @@ pipeline {
                 }
             }
         }
+        stage('Check Server Logs') {
+            steps {
+                script {
+                    // Sprawdzanie logów serwera Minecraft
+                    sh 'docker logs minecraft-server-test'
+                }
+            }
+        }
         stage('Automated Tests') {
             steps {
                 script {
                     // Sprawdzanie dostępności portu
                     sh 'nc -zv localhost 25565'
-
-                    // Sprawdzanie logów serwera Minecraft
-                    sh 'docker logs minecraft-server-test | grep "Done"'
-
-                    // Sprawdzanie stanu pamięci JVM
-                    sh 'docker exec minecraft-server-test jstat -gcutil 1'
                 }
             }
         }
