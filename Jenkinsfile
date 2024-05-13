@@ -1,13 +1,13 @@
 pipeline {
     agent any
     environment {
-        REPO = 'https://github.com/USERNAME/minecraft-server.git'
+        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
         IMAGE_NAME = 'minecraft-server:latest'
     }
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "${env.REPO}"
+                git branch: 'main', url: "${env.REPO}", credentialsId: 'GITHUB_PAT_CREDENTIALS_ID'
             }
         }
         stage('Build Docker Image') {
