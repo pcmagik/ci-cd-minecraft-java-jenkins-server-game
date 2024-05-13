@@ -7,7 +7,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "${env.REPO}", credentialsId: 'GITHUB_PAT_CREDENTIALS_ID'
+                git branch: 'main', url: "${env.REPO}", credentialsId: 'global_github_ssh'
             }
         }
         stage('Build Docker Image') {
