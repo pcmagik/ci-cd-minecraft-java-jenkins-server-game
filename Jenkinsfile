@@ -31,7 +31,7 @@ pipeline {
                 script {
                     docker.image("${env.IMAGE_NAME}").run('-d -p 25565:25565 --name minecraft-server-test')
                     // Daj czas na pełne uruchomienie serwera
-                    sh 'sleep 30'
+                    sh 'sleep 60'
                 }
             }
         }
@@ -46,8 +46,9 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                    // Sprawdzanie dostępności portu
-                    sh 'nc -zv localhost 25565'
+                    // Sprawdzanie dostępności portu na zewnętrznym IP
+                    def externalIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
+                    sh "nc -zv ${externalIp} 25565"
                 }
             }
         }
