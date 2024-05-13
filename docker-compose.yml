@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  minecraft:
+    build: .
+    ports:
+      - "25565:25565"
+    volumes:
+      - minecraft-data:/minecraft-server
+    environment:
+      EULA: "TRUE"
+
+volumes:
+  minecraft-data:
