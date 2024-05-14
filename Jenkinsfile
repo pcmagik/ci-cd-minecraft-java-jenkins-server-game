@@ -55,13 +55,10 @@ pipeline {
             }
         }
         stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
             steps {
                 script {
-                    sh 'docker stop minecraft-server-test || true'
-                    sh 'docker rm minecraft-server-test || true'
+                    sh 'docker stop minecraft-server-prod || true'
+                    sh 'docker rm minecraft-server-prod || true'
                     docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
                 }
             }
