@@ -32,7 +32,7 @@ pipeline {
                 script {
                     docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test")
                     // Daj czas na pełne uruchomienie serwera
-                    sh 'sleep 3'
+                    sh 'sleep 10'
                 }
             }
         }
@@ -55,20 +55,13 @@ pipeline {
             }
         }
         stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
             steps {
                 script {
-                    // Sprawdzanie i zwalnianie portu 25565, jeśli jest zajęty
-                    def containerUsingPort = sh(script: "docker ps -q --filter 'publish=25565'", returnStdout: true).trim()
-                    if (containerUsingPort) {
-                        sh "docker stop ${containerUsingPort}"
-                        sh "docker rm ${containerUsingPort}"
-                    }
-
-                    // Usuwanie istniejącego kontenera produkcyjnego, jeśli istnieje
-                    sh 'docker stop minecraft-server-prod || true'
-                    sh 'docker rm minecraft-server-prod || true'
-
-                    // Uruchamianie nowego kontenera produkcyjnego
+                    sh 'docker stop minecraft-server-test || true'
+                    sh 'docker rm minecraft-server-test || true'
                     docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
                 }
             }
