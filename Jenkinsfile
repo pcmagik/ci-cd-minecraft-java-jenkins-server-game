@@ -31,7 +31,7 @@ pipeline {
                 script {
                     docker.image("${env.IMAGE_NAME}").run('-d -p 25565:25565 --name minecraft-server-test')
                     // Daj czas na pełne uruchomienie serwera
-                    sh 'sleep 30'
+                    sh 'sleep 60'
                 }
             }
         }
