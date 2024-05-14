@@ -3,6 +3,7 @@ pipeline {
     environment {
         REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
         IMAGE_NAME = 'minecraft-server:latest'
+        NETWORK_NAME = 'proxy'
     }
     stages {
         stage('Clone Repository') {
@@ -20,7 +21,7 @@ pipeline {
         stage('Test Docker Image') {
             steps {
                 script {
-                    docker.image("${env.IMAGE_NAME}").inside {
+                    docker.image("${env.IMAGE_NAME}").inside("--network ${env.NETWORK_NAME}") {
                         sh 'java -version'
                     }
                 }
@@ -29,7 +30,7 @@ pipeline {
         stage('Deploy to Test Environment') {
             steps {
                 script {
-                    docker.image("${env.IMAGE_NAME}").run('-d -p 25565:25565 --name minecraft-server-test')
+                    docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test")
                     // Daj czas na pełne uruchomienie serwera
                     sh 'sleep 60'
                 }
@@ -46,9 +47,10 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                    // Sprawdzanie dostępności portu na zewnętrznym IP
-                    def externalIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
-                    sh "nc -zv ${externalIp} 25565"
+                    // Pobieranie IP kontenera
+                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
+                    // Sprawdzanie dostępności portu 25565 przy użyciu nc
+                    sh "nc -zv ${containerIp} 25565 || exit 1"
                 }
             }
         }
@@ -60,7 +62,7 @@ pipeline {
                 script {
                     sh 'docker stop minecraft-server-test || true'
                     sh 'docker rm minecraft-server-test || true'
-                    docker.image("${env.IMAGE_NAME}").run('-d -p 25565:25565 --name minecraft-server-prod')
+                    docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
                 }
             }
         }
