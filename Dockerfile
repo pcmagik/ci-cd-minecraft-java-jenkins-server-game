@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk-alpine
+FROM openjdk:21-jdk
 
 VOLUME /tmp
 EXPOSE 25565
