@@ -1,9 +1,9 @@
 pipeline {
     agent any
     environment {
-        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
+        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-jenkins-server-game.git'
         IMAGE_NAME = 'minecraft-server:latest'
-        NETWORK_NAME = 'proxy'
+        NETWORK_NAME = 'jenkins'
     }
     stages {
         stage('Clone Repository') {
