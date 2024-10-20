@@ -1,20 +1,19 @@
 pipeline {
     agent {
         docker {
-            image 'docker:20.10.12'
-            args '-v /var/run/docker.sock:/var/run/docker.sock --privileged'
+            image 'jenkins/jenkins:lts'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
-    stages {
-        stage('Clone repository') {
-            steps {
-                git branch: 'main', url: 'https://github.com/pcmagik/ci-cd-minecraft-jenkins-server-game.git'
-            }
-        }
+    environment {
+        PATH = "/usr/local/bin:/usr/bin:${env.PATH}"
+    }
 
+    stages {
         stage('Build Docker Image') {
             steps {
+                sh 'docker --version'
                 sh 'docker build -t minecraft_server:latest ./docker/minecraft'
             }
         }
