@@ -1,6 +1,9 @@
 pipeline {
     agent {
-        label 'docker-host-agent-latest' // Użyj agenta z dostępem do Dockera
+        docker {
+            image 'jenkins/jenkins:lts'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
 
     environment {
