@@ -6,31 +6,20 @@ pipeline {
         }
     }
 
-    environment {
-        IMAGE_NAME = 'minecraft_server'
-        CONTAINER_NAME = 'minecraft'
-        DOCKERFILE_DIR = './docker/minecraft'
-    }
-
     stages {
         stage('Clone repository') {
             steps {
-                script {
-                    git branch: 'main', url: 'https://github.com/pcmagik/ci-cd-minecraft-jenkins-server-game.git'
-                }
+                git branch: 'main', url: 'https://github.com/pcmagik/ci-cd-minecraft-jenkins-server-game.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh """
-                    docker build -t ${IMAGE_NAME}:latest ${DOCKERFILE_DIR}
-                    """
-                }
+                sh 'docker build -t minecraft_server:latest ./docker/minecraft'
             }
         }
-
+    }
+}
         stage('Run Docker Container') {
             steps {
                 script {
