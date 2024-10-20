@@ -1,9 +1,6 @@
 pipeline {
     agent {
-        docker {
-            image 'jenkins/jenkins:lts' 
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
+        label 'docker-host-agent-latest' // Użyj agenta z dostępem do Dockera
     }
 
     environment {
@@ -55,14 +52,6 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed. Check console output for details.'
-        }
-    }
-}
-    stage('Debug') {
-        steps {
-            script {
-                sh 'docker version'
-                sh 'which docker'
         }
     }
 }
