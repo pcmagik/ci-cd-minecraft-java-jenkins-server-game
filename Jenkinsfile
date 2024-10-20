@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'docker:20.10.12' 
+            image 'jenkins/jenkins:lts' 
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
@@ -16,7 +16,7 @@ pipeline {
         stage('Clone repository') {
             steps {
                 script {
-                    git branch: 'main', url: 'https://github.com/YOUR-REPO.git'
+                    git branch: 'main', url: 'https://github.com/pcmagik/ci-cd-minecraft-jenkins-server-game.git'
                 }
             }
         }
@@ -55,6 +55,14 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed. Check console output for details.'
+        }
+    }
+}
+    stage('Debug') {
+        steps {
+            script {
+                sh 'docker version'
+                sh 'which docker'
         }
     }
 }
