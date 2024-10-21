@@ -47,18 +47,13 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                // Pobieranie IP kontenera
-                def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
-
-                if (containerIp) {
-                // Sprawdzanie dostępności portu 25565 przy użyciu curl
-                sh "curl --connect-timeout 10 ${containerIp}:25565 || exit 1"
-                } else {
-                error("Could not retrieve container IP address")
+                    // Pobieranie IP kontenera
+                    docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test")
+                    // Sprawdzanie dostępności portu 25565 przy użyciu nc
+                    sh "nc -zv ${containerIp} 25565 || exit 1"
+                }
             }
         }
-    }
-}
         stage('Deploy to Production') {
             when {
                 branch 'main'
