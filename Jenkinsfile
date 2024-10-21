@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'docker-host-agent-latest'
+    }
     environment {
         REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
         IMAGE_NAME = 'minecraft-server:latest'
@@ -52,7 +54,9 @@ pipeline {
                     // Pobieranie IP kontenera
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
                     // Sprawdzanie dostępności portu 25565 przy użyciu nc
-                    sh "nc -zv ${containerIp} 25565 || exit 1"
+                    if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) != 0) {
+                        error("Port 25565 na kontenerze ${containerIp} nie jest dostępny. Test nie przeszedł.")
+                    }
                 }
             }
         }
@@ -62,9 +66,15 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'docker stop minecraft-server-prod || true'
-                    sh 'docker rm minecraft-server-prod || true'
-                    docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
+                    // Sprawdzenie, czy serwer testowy działa poprawnie przed wdrożeniem na produkcję
+                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
+                    if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) == 0) {
+                        sh 'docker stop minecraft-server-prod || true'
+                        sh 'docker rm minecraft-server-prod || true'
+                        docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
+                    } else {
+                        error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
+                    }
                 }
             }
         }
@@ -74,9 +84,8 @@ pipeline {
             script {
                 sh 'docker stop minecraft-server-test || true'
                 sh 'docker rm minecraft-server-test || true'
+                sh "docker rmi ${env.IMAGE_NAME} || true"
             }
         }
     }
 }
-
-### ITS WORKING! ###
