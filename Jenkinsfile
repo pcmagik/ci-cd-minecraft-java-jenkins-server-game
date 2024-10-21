@@ -35,7 +35,7 @@ pipeline {
                 script {
                     sh "docker stop ${TEST_SERVER_NAME} || true"
                     sh "docker rm ${TEST_SERVER_NAME} || true"
-                    docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25566 --name ${TEST_SERVER_NAME} -e MEMORY_SIZE=2G")
+                    docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25567:25565 --name ${TEST_SERVER_NAME} -e MEMORY_SIZE=2G")
                     
                     // Czekamy na informację, że serwer jest gotowy
                     timeout(time: 2, unit: 'MINUTES') {
@@ -52,9 +52,9 @@ pipeline {
                 script {
                     // Pobieranie IP kontenera
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStdout: true).trim()
-                    // Sprawdzanie dostępności portu 25566 przy użyciu nc
-                    if (sh(script: "nc -zv ${containerIp} 25566", returnStatus: true) != 0) {
-                        error("Port 25566 na kontenerze ${containerIp} nie jest dostępny. Test nie przeszedł.")
+                    // Sprawdzanie dostępności portu 25567 przy użyciu nc
+                    if (sh(script: "nc -zv ${containerIp} 25567", returnStatus: true) != 0) {
+                        error("Port 25567 na kontenerze ${containerIp} nie jest dostępny. Test nie przeszedł.")
                     }
                 }
             }
