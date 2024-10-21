@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'docker-host-agent-latest'
-    }
+    agent any
     environment {
         REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
         IMAGE_NAME = 'minecraft-server:latest'
