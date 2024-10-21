@@ -1,7 +1,7 @@
 # Dockerfile for Minecraft Java Server
 
 # Start with the official OpenJDK image as a base
-FROM openjdk:21-jdk-alpine
+FROM openjdk:17-jdk-alpine
 
 # Set environment variables
 ENV MINECRAFT_VERSION=1.21.1 \
