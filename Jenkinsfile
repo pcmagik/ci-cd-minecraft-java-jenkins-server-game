@@ -2,14 +2,7 @@ pipeline {
     agent {
         label 'docker-host-agent-latest' // Użyj agenta z dostępem do Dockera
     }
-    stage('Debug') {
-        steps {
-            script {
-                sh 'docker version'
-                sh 'which docker'
-            }
-        }
-    }
+    
     environment {
         IMAGE_NAME = 'minecraft_server'
         CONTAINER_NAME = 'minecraft'
@@ -17,6 +10,15 @@ pipeline {
     }
 
     stages {
+        stage('Debug') {
+            steps {
+                script {
+                    sh 'docker version'
+                    sh 'which docker'
+                }
+            }
+        }
+
         stage('Clone repository') {
             steps {
                 script {
