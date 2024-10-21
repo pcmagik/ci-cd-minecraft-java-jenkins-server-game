@@ -86,18 +86,15 @@ pipeline {
         stage('Deploy to Production') {
             steps {
                 script {
+                    // Zatrzymanie i usunięcie testowego serwera przed wdrożeniem na produkcję
+                    sh "docker stop ${TEST_SERVER_NAME} || true"
+                    sh "docker rm ${TEST_SERVER_NAME} || true"
+                    
                     // Sprawdzenie, czy serwer testowy działa poprawnie przed wdrożeniem na produkcję
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStdout: true).trim()
                     if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) == 0) {
                         sh "docker stop ${PROD_SERVER_NAME} || true"
                         sh "docker rm ${PROD_SERVER_NAME} || true"
-                        // Dodanie opcji aby upewnić się, że port jest wolny
-                        timeout(time: 30, unit: 'SECONDS') {
-                            waitUntil {
-                                def isPortFree = sh(script: "! lsof -i :25565", returnStatus: true) == 0
-                                return isPortFree
-                            }
-                        }
                         docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
                     } else {
                         error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
