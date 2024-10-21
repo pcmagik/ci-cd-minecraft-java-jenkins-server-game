@@ -7,6 +7,7 @@ pipeline {
         BACKUP_DIR = '/var/jenkins_home/minecraft-backups'
         PROD_SERVER_NAME = 'minecraft-server-prod'
         TEST_SERVER_NAME = 'minecraft-server-test'
+        DATA_DIR = '/var/jenkins_home/minecraft-data'
     }
     stages {
         stage('Clone Repository') {
@@ -36,15 +37,20 @@ pipeline {
                     sh "docker stop ${TEST_SERVER_NAME} || true"
                     sh "docker rm ${TEST_SERVER_NAME} || true"
                     docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${TEST_SERVER_NAME} -e MEMORY_SIZE=2G")
-                    // Daj czas na pełne uruchomienie serwera
-                    sh 'sleep 20'
+                    
+                    // Zamiast sleep czekamy na informację, że serwer jest gotowy
+                    timeout(time: 1, unit: 'MINUTES') {
+                        waitUntil {
+                            def logOutput = sh(script: "docker logs ${TEST_SERVER_NAME}", returnStdout: true)
+                            return logOutput.contains('Done')
+                        }
+                    }
                 }
             }
         }
         stage('Check Server Logs') {
             steps {
                 script {
-                    // Sprawdzanie logów serwera Minecraft
                     sh "docker logs ${TEST_SERVER_NAME}"
                 }
             }
@@ -52,9 +58,7 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                    // Pobieranie IP kontenera
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStdout: true).trim()
-                    // Sprawdzanie dostępności portu 25565 przy użyciu nc
                     if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) != 0) {
                         error("Port 25565 na kontenerze ${containerIp} nie jest dostępny. Test nie przeszedł.")
                     }
@@ -78,12 +82,11 @@ pipeline {
             }
             steps {
                 script {
-                    // Sprawdzenie, czy serwer testowy działa poprawnie przed wdrożeniem na produkcję
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStdout: true).trim()
                     if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) == 0) {
                         sh "docker stop ${PROD_SERVER_NAME} || true"
                         sh "docker rm ${PROD_SERVER_NAME} || true"
-                        docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
+                        docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME} -v ${DATA_DIR}:/opt/minecraft/world")
                     } else {
                         error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
                     }
@@ -96,7 +99,6 @@ pipeline {
             }
             steps {
                 script {
-                    // Prosta monitorowanie, że serwer działa
                     def prodIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${PROD_SERVER_NAME}", returnStdout: true).trim()
                     if (sh(script: "nc -zv ${prodIp} 25565", returnStatus: true) != 0) {
                         error("Serwer produkcyjny nie jest dostępny. Konieczne jest działanie.")
@@ -115,6 +117,12 @@ pipeline {
                 sh "docker rmi ${IMAGE_NAME} || true"
             }
         }
+        failure {
+            script {
+                // Wysłanie notyfikacji w przypadku nieudanej operacji
+                echo "Pipeline zakończony niepowodzeniem. Wysyłanie powiadomienia..."
+                // Możesz tutaj dodać np. integrację z Slackiem
+            }
+        }
     }
 }
-
