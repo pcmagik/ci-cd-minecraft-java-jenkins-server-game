@@ -54,6 +54,14 @@ pipeline {
                 }
             }
         }
+        stage('Declarative: Post Actions') {
+            steps {
+                    script {
+                    sh 'docker stop minecraft-server-test || true'
+                    sh 'docker rm minecraft-server-test || true'
+                }
+            }
+        }
         stage('Deploy to Production') {
             when {
                 branch 'main'
