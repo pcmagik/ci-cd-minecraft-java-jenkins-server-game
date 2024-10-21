@@ -47,13 +47,18 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                    // Pobieranie IP kontenera
-                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
-                    // Sprawdzanie dostępności portu 25565 przy użyciu nc
-                    sh "curl --connect-timeout 10 ${containerIp}:25565 || exit 1"
-                }
+                // Pobieranie IP kontenera
+                def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
+
+                if (containerIp) {
+                // Sprawdzanie dostępności portu 25565 przy użyciu curl
+                sh "curl --connect-timeout 10 ${containerIp}:25565 || exit 1"
+                } else {
+                error("Could not retrieve container IP address")
             }
         }
+    }
+}
         stage('Deploy to Production') {
             when {
                 branch 'main'
