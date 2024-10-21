@@ -1,8 +1,8 @@
 pipeline {
     agent {
-        label 'docker-host-agent-latest' // Użyj agenta z dostępem do Dockera
+        label 'docker-host-agent-latest' // Użyj agenta, który ma dostęp do Dockera
     }
-    
+
     environment {
         IMAGE_NAME = 'minecraft_server'
         CONTAINER_NAME = 'minecraft'
@@ -45,7 +45,7 @@ pipeline {
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
                     """
-                    
+
                     // Run the new Minecraft server container
                     sh """
                     docker run -d -p 25565:25565 --name ${CONTAINER_NAME} ${IMAGE_NAME}:latest
