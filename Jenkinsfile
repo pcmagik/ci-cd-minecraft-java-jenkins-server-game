@@ -30,6 +30,8 @@ pipeline {
         stage('Deploy to Test Environment') {
             steps {
                 script {
+                    sh 'docker stop minecraft-server-test || true'
+                    sh 'docker rm minecraft-server-test || true'
                     docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test -e MEMORY_SIZE=2G")
                     // Daj czas na pełne uruchomienie serwera
                     sh 'sleep 10'
@@ -48,17 +50,9 @@ pipeline {
             steps {
                 script {
                     // Pobieranie IP kontenera
-                    docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test")
+                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
                     // Sprawdzanie dostępności portu 25565 przy użyciu nc
                     sh "nc -zv ${containerIp} 25565 || exit 1"
-                }
-            }
-        }
-        stage('Declarative: Post Actions') {
-            steps {
-                    script {
-                    sh 'docker stop minecraft-server-test || true'
-                    sh 'docker rm minecraft-server-test || true'
                 }
             }
         }
@@ -68,8 +62,8 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'docker stop minecraft-server-test || true'
-                    sh 'docker rm minecraft-server-test || true'
+                    sh 'docker stop minecraft-server-prod || true'
+                    sh 'docker rm minecraft-server-prod || true'
                     docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
                 }
             }
