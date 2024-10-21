@@ -90,6 +90,10 @@ pipeline {
                     
                     // Wdrożenie na produkcję po zakończeniu testów
                     docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
+                    
+                    // Wczytanie stanu świata po wdrożeniu
+                    def worldState = sh(script: "docker exec ${PROD_SERVER_NAME} ls /opt/minecraft/world", returnStdout: true).trim()
+                    echo "Stan świata po wdrożeniu: \n${worldState}"
                 }
             }
         }
@@ -107,15 +111,6 @@ pipeline {
                             echo "Serwer produkcyjny działa prawidłowo."
                         }
                     }
-                }
-            }
-        }
-        stage('Post-deployment Verification') {
-            steps {
-                script {
-                    // Wczytanie stanu świata po wdrożeniu nowego serwera
-                    def worldState = sh(script: "docker exec ${PROD_SERVER_NAME} ls /opt/minecraft/world", returnStdout: true).trim()
-                    echo "Stan świata po wdrożeniu: \n${worldState}"
                 }
             }
         }
