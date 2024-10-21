@@ -110,6 +110,15 @@ pipeline {
                 }
             }
         }
+        stage('Post-deployment Verification') {
+            steps {
+                script {
+                    // Wczytanie stanu świata po wdrożeniu nowego serwera
+                    def worldState = sh(script: "docker exec ${PROD_SERVER_NAME} ls /opt/minecraft/world", returnStdout: true).trim()
+                    echo "Stan świata po wdrożeniu: \n${worldState}"
+                }
+            }
+        }
     }
     post {
         always {
@@ -126,4 +135,3 @@ pipeline {
         }
     }
 }
-
