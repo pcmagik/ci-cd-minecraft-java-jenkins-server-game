@@ -91,6 +91,13 @@ pipeline {
                     if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) == 0) {
                         sh "docker stop ${PROD_SERVER_NAME} || true"
                         sh "docker rm ${PROD_SERVER_NAME} || true"
+                        // Dodanie opcji aby upewnić się, że port jest wolny
+                        timeout(time: 30, unit: 'SECONDS') {
+                            waitUntil {
+                                def isPortFree = sh(script: "! lsof -i :25565", returnStatus: true) == 0
+                                return isPortFree
+                            }
+                        }
                         docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
                     } else {
                         error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
