@@ -33,8 +33,8 @@ pipeline {
         stage('Deploy to Test Environment') {
             steps {
                 script {
-                    sh 'docker stop ${TEST_SERVER_NAME} || true'
-                    sh 'docker rm ${TEST_SERVER_NAME} || true'
+                    sh "docker stop ${TEST_SERVER_NAME} || true"
+                    sh "docker rm ${TEST_SERVER_NAME} || true"
                     docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${TEST_SERVER_NAME} -e MEMORY_SIZE=2G")
                     // Daj czas na pełne uruchomienie serwera
                     sh 'sleep 20'
@@ -45,7 +45,7 @@ pipeline {
             steps {
                 script {
                     // Sprawdzanie logów serwera Minecraft
-                    sh 'docker logs ${TEST_SERVER_NAME}'
+                    sh "docker logs ${TEST_SERVER_NAME}"
                 }
             }
         }
@@ -68,7 +68,7 @@ pipeline {
             steps {
                 script {
                     sh "mkdir -p ${BACKUP_DIR}"
-                    sh "docker cp ${PROD_SERVER_NAME}:/opt/minecraft/world ${BACKUP_DIR}/world_$(date +%Y%m%d_%H%M%S) || true"
+                    sh "docker cp ${PROD_SERVER_NAME}:/opt/minecraft/world ${BACKUP_DIR}/world_\$(date +%Y%m%d_%H%M%S) || true"
                 }
             }
         }
@@ -81,8 +81,8 @@ pipeline {
                     // Sprawdzenie, czy serwer testowy działa poprawnie przed wdrożeniem na produkcję
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStdout: true).trim()
                     if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) == 0) {
-                        sh 'docker stop ${PROD_SERVER_NAME} || true'
-                        sh 'docker rm ${PROD_SERVER_NAME} || true'
+                        sh "docker stop ${PROD_SERVER_NAME} || true"
+                        sh "docker rm ${PROD_SERVER_NAME} || true"
                         docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
                     } else {
                         error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
@@ -110,8 +110,8 @@ pipeline {
     post {
         always {
             script {
-                sh 'docker stop ${TEST_SERVER_NAME} || true'
-                sh 'docker rm ${TEST_SERVER_NAME} || true'
+                sh "docker stop ${TEST_SERVER_NAME} || true"
+                sh "docker rm ${TEST_SERVER_NAME} || true"
                 sh "docker rmi ${IMAGE_NAME} || true"
             }
         }
