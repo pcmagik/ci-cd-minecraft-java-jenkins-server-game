@@ -4,24 +4,27 @@ pipeline {
         REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
         IMAGE_NAME = 'minecraft-server:latest'
         NETWORK_NAME = 'jenkins'
+        BACKUP_DIR = '/var/jenkins_home/minecraft-backups'
+        PROD_SERVER_NAME = 'minecraft-server-prod'
+        TEST_SERVER_NAME = 'minecraft-server-test'
     }
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "${env.REPO}", credentialsId: 'global_github_ssh'
+                git branch: 'main', url: "\${env.REPO}", credentialsId: 'global_github_ssh'
             }
         }
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${env.IMAGE_NAME}")
+                    docker.build("\${env.IMAGE_NAME}")
                 }
             }
         }
         stage('Test Docker Image') {
             steps {
                 script {
-                    docker.image("${env.IMAGE_NAME}").inside("--network ${env.NETWORK_NAME}") {
+                    docker.image("\${env.IMAGE_NAME}").inside("--network \${env.NETWORK_NAME}") {
                         sh 'java -version'
                     }
                 }
@@ -30,11 +33,11 @@ pipeline {
         stage('Deploy to Test Environment') {
             steps {
                 script {
-                    sh 'docker stop minecraft-server-test || true'
-                    sh 'docker rm minecraft-server-test || true'
-                    docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test -e MEMORY_SIZE=2G")
+                    sh 'docker stop \${TEST_SERVER_NAME} || true'
+                    sh 'docker rm \${TEST_SERVER_NAME} || true'
+                    docker.image("\${env.IMAGE_NAME}").run("-d --network \${env.NETWORK_NAME} -p 25565:25565 --name \${TEST_SERVER_NAME} -e MEMORY_SIZE=2G")
                     // Daj czas na pełne uruchomienie serwera
-                    sh 'sleep 10'
+                    sh 'sleep 20'
                 }
             }
         }
@@ -42,7 +45,7 @@ pipeline {
             steps {
                 script {
                     // Sprawdzanie logów serwera Minecraft
-                    sh 'docker logs minecraft-server-test'
+                    sh 'docker logs \${TEST_SERVER_NAME}'
                 }
             }
         }
@@ -50,11 +53,22 @@ pipeline {
             steps {
                 script {
                     // Pobieranie IP kontenera
-                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
+                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \${TEST_SERVER_NAME}", returnStdout: true).trim()
                     // Sprawdzanie dostępności portu 25565 przy użyciu nc
-                    if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) != 0) {
-                        error("Port 25565 na kontenerze ${containerIp} nie jest dostępny. Test nie przeszedł.")
+                    if (sh(script: "nc -zv \${containerIp} 25565", returnStatus: true) != 0) {
+                        error("Port 25565 na kontenerze \${containerIp} nie jest dostępny. Test nie przeszedł.")
                     }
+                }
+            }
+        }
+        stage('Backup Existing Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    sh "mkdir -p \${BACKUP_DIR}"
+                    sh "docker cp \${PROD_SERVER_NAME}:/opt/minecraft/world \${BACKUP_DIR}/world_\$(date +%Y%m%d_%H%M%S) || true"
                 }
             }
         }
@@ -65,13 +79,29 @@ pipeline {
             steps {
                 script {
                     // Sprawdzenie, czy serwer testowy działa poprawnie przed wdrożeniem na produkcję
-                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
-                    if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) == 0) {
-                        sh 'docker stop minecraft-server-prod || true'
-                        sh 'docker rm minecraft-server-prod || true'
-                        docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
+                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \${TEST_SERVER_NAME}", returnStdout: true).trim()
+                    if (sh(script: "nc -zv \${containerIp} 25565", returnStatus: true) == 0) {
+                        sh 'docker stop \${PROD_SERVER_NAME} || true'
+                        sh 'docker rm \${PROD_SERVER_NAME} || true'
+                        docker.image("\${env.IMAGE_NAME}").run("-d --network \${env.NETWORK_NAME} -p 25565:25565 --name \${PROD_SERVER_NAME}")
                     } else {
                         error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
+                    }
+                }
+            }
+        }
+        stage('Monitor Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    // Prosta monitorowanie, że serwer działa
+                    def prodIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \${PROD_SERVER_NAME}", returnStdout: true).trim()
+                    if (sh(script: "nc -zv \${prodIp} 25565", returnStatus: true) != 0) {
+                        error("Serwer produkcyjny nie jest dostępny. Konieczne jest działanie.")
+                    } else {
+                        echo "Serwer produkcyjny działa prawidłowo."
                     }
                 }
             }
@@ -80,9 +110,9 @@ pipeline {
     post {
         always {
             script {
-                sh 'docker stop minecraft-server-test || true'
-                sh 'docker rm minecraft-server-test || true'
-                sh "docker rmi ${env.IMAGE_NAME} || true"
+                sh 'docker stop \${TEST_SERVER_NAME} || true'
+                sh 'docker rm \${TEST_SERVER_NAME} || true'
+                sh "docker rmi \${env.IMAGE_NAME} || true"
             }
         }
     }
