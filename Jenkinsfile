@@ -37,21 +37,13 @@ pipeline {
                     sh "docker rm ${TEST_SERVER_NAME} || true"
                     docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${TEST_SERVER_NAME} -e MEMORY_SIZE=2G")
                     
-                    // Zamiast sleep czekamy na informację, że serwer jest gotowy
+                    // Czekamy na informację, że serwer jest gotowy
                     timeout(time: 2, unit: 'MINUTES') {
                         waitUntil {
                             def logOutput = sh(script: "docker logs ${TEST_SERVER_NAME}", returnStdout: true)
                             return logOutput.contains('Done')
                         }
                     }
-                }
-            }
-        }
-        stage('Check Server Logs') {
-            steps {
-                script {
-                    // Sprawdzanie logów serwera Minecraft
-                    sh "docker logs ${TEST_SERVER_NAME}"
                 }
             }
         }
@@ -86,26 +78,12 @@ pipeline {
         stage('Deploy to Production') {
             steps {
                 script {
-                    // Zatrzymanie i usunięcie testowego serwera przed wdrożeniem na produkcję
-                    sh "docker stop ${TEST_SERVER_NAME} || true"
-                    sh "docker rm ${TEST_SERVER_NAME} || true"
+                    // Zatrzymanie i usunięcie istniejącego serwera produkcyjnego
+                    sh "docker stop ${PROD_SERVER_NAME} || true"
+                    sh "docker rm ${PROD_SERVER_NAME} || true"
                     
-                    // Sprawdzenie, czy serwer testowy działa poprawnie przed wdrożeniem na produkcję
-                    def testContainerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStatus: true).trim()
-                    if (testContainerIp) {
-                        if (sh(script: "nc -zv ${testContainerIp} 25565", returnStatus: true) == 0) {
-                            sh "docker stop ${PROD_SERVER_NAME} || true"
-                            sh "docker rm ${PROD_SERVER_NAME} || true"
-                            docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
-                        } else {
-                            error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
-                        }
-                    } else {
-                        echo "Serwer testowy został usunięty pomyślnie. Kontynuacja wdrażania na produkcję."
-                        sh "docker stop ${PROD_SERVER_NAME} || true"
-                        sh "docker rm ${PROD_SERVER_NAME} || true"
-                        docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
-                    }
+                    // Wdrożenie na produkcję po zakończeniu testów
+                    docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
                 }
             }
         }
