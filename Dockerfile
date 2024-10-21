@@ -17,6 +17,9 @@ RUN mkdir -p $MINECRAFT_SERVER_DIR
 
 WORKDIR $MINECRAFT_SERVER_DIR
 
+# Copy server.properties from the local machine to the container
+COPY server.properties $MINECRAFT_SERVER_DIR/
+
 # Download the Minecraft server jar
 RUN wget -O server.jar https://piston-data.mojang.com/v1/objects/59353fb40c36d304f2035d51e7d6e6baa98dc05c/server.jar
 
