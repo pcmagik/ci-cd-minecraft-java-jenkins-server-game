@@ -7,7 +7,6 @@ pipeline {
         BACKUP_DIR = '/var/jenkins_home/minecraft-backups'
         PROD_SERVER_NAME = 'minecraft-server-prod'
         TEST_SERVER_NAME = 'minecraft-server-test'
-        HOST_IP = '10.1.2.230' // Adres IP hosta Docker
     }
     stages {
         stage('Clone Repository') {
@@ -53,20 +52,12 @@ pipeline {
             steps {
                 script {
                     // Sprawdzanie dostępności portu 25567 na adresie hosta
-                    def retryCount = 0
-                    def maxRetries = 5
-                    def success = false
-                    while (retryCount < maxRetries && !success) {
-                        if (sh(script: "nc -zv ${HOST_IP} 25567", returnStatus: true) == 0) {
-                            success = true
-                        } else {
-                            echo "Port 25567 na adresie ${HOST_IP} nie jest dostępny. Próba ${retryCount + 1} z ${maxRetries}."
-                            retryCount++
+                    retry(5) {
+                        if (sh(script: "nc -zv 10.1.2.230 25567", returnStatus: true) != 0) {
+                            echo "Port 25567 na adresie 10.1.2.230 nie jest dostępny. Próba ponowna."
                             sleep(time: 10, unit: 'SECONDS')
+                            error("Port 25567 nie jest dostępny, ponawiam test.")
                         }
-                    }
-                    if (!success) {
-                        error("Port 25567 na adresie ${HOST_IP} nie jest dostępny. Test nie przeszedł.")
                     }
                     // Usunięcie kontenera testowego po zakończeniu testów
                     sh "docker stop ${TEST_SERVER_NAME} || true"
@@ -105,22 +96,16 @@ pipeline {
         stage('Monitor Production') {
             steps {
                 script {
-                    // Proste monitorowanie, że serwer działa na adresie hosta
-                    def retryCount = 0
-                    def maxRetries = 5
-                    def success = false
-                    while (retryCount < maxRetries && !success) {
-                        if (sh(script: "nc -zv ${HOST_IP} 25565", returnStatus: true) == 0) {
-                            success = true
-                            echo "Serwer produkcyjny działa prawidłowo."
-                        } else {
-                            echo "Serwer produkcyjny na adresie ${HOST_IP} nie jest dostępny. Próba ${retryCount + 1} z ${maxRetries}."
-                            retryCount++
+                    // Prosta monitorowanie, że serwer działa
+                    def prodIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${PROD_SERVER_NAME}", returnStdout: true).trim()
+                    retry(3) {
+                        if (sh(script: "nc -zv ${prodIp} 25565", returnStatus: true) != 0) {
+                            echo "Serwer produkcyjny nie jest dostępny, ponawiam test."
                             sleep(time: 10, unit: 'SECONDS')
+                            error("Serwer produkcyjny nie jest dostępny. Ponawiam próbę.")
+                        } else {
+                            echo "Serwer produkcyjny działa prawidłowo."
                         }
-                    }
-                    if (!success) {
-                        error("Serwer produkcyjny na adresie ${HOST_IP} nie jest dostępny. Konieczne jest działanie.")
                     }
                 }
             }
@@ -141,4 +126,3 @@ pipeline {
         }
     }
 }
-
