@@ -1,11 +1,14 @@
 # Dockerfile for Minecraft Java Server
 
-FROM openjdk:17-jdk-alpine
+# Start with the official OpenJDK 21 image as a base
+FROM openjdk:21-jdk
 
+# Set environment variables
 ENV MINECRAFT_VERSION=1.21.1 \
     MINECRAFT_SERVER_DIR=/opt/minecraft \
     MEMORY_SIZE=2G
 
+# Create the Minecraft directory
 RUN mkdir -p $MINECRAFT_SERVER_DIR
 
 WORKDIR $MINECRAFT_SERVER_DIR
