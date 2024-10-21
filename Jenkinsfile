@@ -75,18 +75,6 @@ pipeline {
                 }
             }
         }
-        stage('Deploy to Production') {
-            steps {
-                script {
-                    // Zatrzymanie i usunięcie istniejącego serwera produkcyjnego
-                    sh "docker stop ${PROD_SERVER_NAME} || true"
-                    sh "docker rm ${PROD_SERVER_NAME} || true"
-                    
-                    // Wdrożenie na produkcję po zakończeniu testów
-                    docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
-                }
-            }
-        }
         stage('Backup Existing Production') {
             steps {
                 script {
@@ -100,6 +88,18 @@ pipeline {
                     } else {
                         echo "Nie znaleziono kontenera produkcyjnego, pomijanie kopii zapasowej."
                     }
+                }
+            }
+        }
+        stage('Deploy to Production') {
+            steps {
+                script {
+                    // Zatrzymanie i usunięcie istniejącego serwera produkcyjnego
+                    sh "docker stop ${PROD_SERVER_NAME} || true"
+                    sh "docker rm ${PROD_SERVER_NAME} || true"
+                    
+                    // Wdrożenie na produkcję po zakończeniu testów
+                    docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${PROD_SERVER_NAME}")
                 }
             }
         }
@@ -120,8 +120,6 @@ pipeline {
     post {
         always {
             script {
-                sh "docker stop ${PROD_SERVER_NAME} || true"
-                sh "docker rm ${PROD_SERVER_NAME} || true"
                 sh "docker rmi ${IMAGE_NAME} --force || true"
             }
         }
