@@ -38,7 +38,7 @@ pipeline {
                     docker.image(IMAGE_NAME).run("-d --network ${NETWORK_NAME} -p 25565:25565 --name ${TEST_SERVER_NAME} -e MEMORY_SIZE=2G")
                     
                     // Zamiast sleep czekamy na informację, że serwer jest gotowy
-                    timeout(time: 1, unit: 'MINUTES') {
+                    timeout(time: 2, unit: 'MINUTES') {
                         waitUntil {
                             def logOutput = sh(script: "docker logs ${TEST_SERVER_NAME}", returnStdout: true)
                             return logOutput.contains('Done')
@@ -71,7 +71,11 @@ pipeline {
             steps {
                 script {
                     sh "mkdir -p ${BACKUP_DIR}"
-                    sh "docker cp ${PROD_SERVER_NAME}:/opt/minecraft/world ${BACKUP_DIR}/world_\$(date +%Y%m%d_%H%M%S) || true"
+                    if (sh(script: "docker ps -q -f name=${PROD_SERVER_NAME}", returnStatus: true) == 0) {
+                        sh "docker cp ${PROD_SERVER_NAME}:/opt/minecraft/world ${BACKUP_DIR}/world_\$(date +%Y%m%d_%H%M%S) || true"
+                    } else {
+                        echo "Nie znaleziono kontenera produkcyjnego, pomijanie kopii zapasowej."
+                    }
                 }
             }
         }
@@ -109,7 +113,9 @@ pipeline {
             script {
                 sh "docker stop ${TEST_SERVER_NAME} || true"
                 sh "docker rm ${TEST_SERVER_NAME} || true"
-                sh "docker rmi ${IMAGE_NAME} || true"
+                sh "docker stop ${PROD_SERVER_NAME} || true"
+                sh "docker rm ${PROD_SERVER_NAME} || true"
+                sh "docker rmi ${IMAGE_NAME} --force || true"
             }
         }
         failure {
