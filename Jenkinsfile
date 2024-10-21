@@ -8,20 +8,20 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "${env.REPO}", credentialsId: 'global_github_ssh'
+                git branch: 'main', url: "\${env.REPO}", credentialsId: 'global_github_ssh'
             }
         }
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${env.IMAGE_NAME}")
+                    docker.build("\${env.IMAGE_NAME}")
                 }
             }
         }
         stage('Test Docker Image') {
             steps {
                 script {
-                    docker.image("${env.IMAGE_NAME}").inside("--network ${env.NETWORK_NAME}") {
+                    docker.image("\${env.IMAGE_NAME}").inside("--network \${env.NETWORK_NAME}") {
                         sh 'java -version'
                     }
                 }
@@ -32,7 +32,7 @@ pipeline {
                 script {
                     sh 'docker stop minecraft-server-test || true'
                     sh 'docker rm minecraft-server-test || true'
-                    docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test -e MEMORY_SIZE=2G")
+                    docker.image("\${env.IMAGE_NAME}").run("-d --network \${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-test -e MEMORY_SIZE=2G")
                     // Daj czas na pełne uruchomienie serwera
                     sh 'sleep 10'
                 }
@@ -52,8 +52,8 @@ pipeline {
                     // Pobieranie IP kontenera
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
                     // Sprawdzanie dostępności portu 25565 przy użyciu nc
-                    if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) != 0) {
-                        error("Port 25565 na kontenerze ${containerIp} nie jest dostępny. Test nie przeszedł.")
+                    if (sh(script: "nc -zv \${containerIp} 25565", returnStatus: true) != 0) {
+                        error("Port 25565 na kontenerze \${containerIp} nie jest dostępny. Test nie przeszedł.")
                     }
                 }
             }
@@ -66,10 +66,10 @@ pipeline {
                 script {
                     // Sprawdzenie, czy serwer testowy działa poprawnie przed wdrożeniem na produkcję
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
-                    if (sh(script: "nc -zv ${containerIp} 25565", returnStatus: true) == 0) {
+                    if (sh(script: "nc -zv \${containerIp} 25565", returnStatus: true) == 0) {
                         sh 'docker stop minecraft-server-prod || true'
                         sh 'docker rm minecraft-server-prod || true'
-                        docker.image("${env.IMAGE_NAME}").run("-d --network ${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
+                        docker.image("\${env.IMAGE_NAME}").run("-d --network \${env.NETWORK_NAME} -p 25565:25565 --name minecraft-server-prod")
                     } else {
                         error("Serwer testowy nie jest dostępny. Przerwanie wdrażania na produkcję.")
                     }
@@ -82,7 +82,7 @@ pipeline {
             script {
                 sh 'docker stop minecraft-server-test || true'
                 sh 'docker rm minecraft-server-test || true'
-                sh "docker rmi ${env.IMAGE_NAME} || true"
+                sh "docker rmi \${env.IMAGE_NAME} || true"
             }
         }
     }
