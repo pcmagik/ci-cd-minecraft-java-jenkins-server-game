@@ -51,23 +51,21 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                    // Pobieranie IP kontenera
-                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStdout: true).trim()
-                    // Sprawdzanie dostępności portu 25567 przy użyciu nc
+                    // Sprawdzanie dostępności portu 25567 na adresie hosta
                     def retryCount = 0
                     def maxRetries = 5
                     def success = false
                     while (retryCount < maxRetries && !success) {
-                        if (sh(script: "nc -zv ${containerIp} 25567", returnStatus: true) == 0) {
+                        if (sh(script: "nc -zv 10.1.2.230 25567", returnStatus: true) == 0) {
                             success = true
                         } else {
-                            echo "Port 25567 na kontenerze ${containerIp} nie jest dostępny. Próba ${retryCount + 1} z ${maxRetries}."
+                            echo "Port 25567 na adresie 10.1.2.230 nie jest dostępny. Próba ${retryCount + 1} z ${maxRetries}."
                             retryCount++
                             sleep(time: 10, unit: 'SECONDS')
                         }
                     }
                     if (!success) {
-                        error("Port 25567 na kontenerze ${containerIp} nie jest dostępny. Test nie przeszedł.")
+                        error("Port 25567 na adresie 10.1.2.230 nie jest dostępny. Test nie przeszedł.")
                     }
                     // Usunięcie kontenera testowego po zakończeniu testów
                     sh "docker stop ${TEST_SERVER_NAME} || true"
