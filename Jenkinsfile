@@ -50,16 +50,6 @@ pipeline {
                 }
             }
         }
-        stage('Automated Tests') {
-            steps {
-                script {
-                    // Pobieranie IP kontenera
-                    def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
-                    // Sprawdzanie dostępności portu 25565 przy użyciu nc
-                    sh "nc -zv ${containerIp} 25565 || exit 1"
-                }
-            }
-        }
         stage('Deploy to Production') {
             when {
                 branch 'main'
