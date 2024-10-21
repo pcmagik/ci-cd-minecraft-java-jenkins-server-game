@@ -51,8 +51,8 @@ pipeline {
                 script {
                     // Pobieranie IP kontenera
                     def containerIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' minecraft-server-test", returnStdout: true).trim()
-                    // Sprawdzanie dostępności portu 25565 przy użyciu nc
-                    sh "nc -zv ${containerIp} 25565 || exit 1"
+                    // Sprawdzanie dostępności portu 25565 przy użyciu curl zamiast nc
+                    sh "curl --connect-timeout 10 ${containerIp}:25565 || exit 1"
                 }
             }
         }
