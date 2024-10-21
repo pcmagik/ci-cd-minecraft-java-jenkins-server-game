@@ -8,9 +8,9 @@ ENV MINECRAFT_VERSION=1.21.1 \
     MINECRAFT_SERVER_DIR=/opt/minecraft \
     MEMORY_SIZE=2G
 
-# Install wget using microdnf
+# Install wget using apt-get
 USER root
-RUN microdnf install wget -y
+RUN apt-get update && apt-get install wget -y
 
 # Create the Minecraft directory
 RUN mkdir -p $MINECRAFT_SERVER_DIR
