@@ -1,14 +1,11 @@
 # Dockerfile for Minecraft Java Server
 
-# Start with the official OpenJDK image as a base
 FROM openjdk:17-jdk-alpine
 
-# Set environment variables
 ENV MINECRAFT_VERSION=1.21.1 \
     MINECRAFT_SERVER_DIR=/opt/minecraft \
     MEMORY_SIZE=2G
 
-# Create the Minecraft directory
 RUN mkdir -p $MINECRAFT_SERVER_DIR
 
 WORKDIR $MINECRAFT_SERVER_DIR
@@ -23,4 +20,4 @@ RUN echo "eula=true" > eula.txt
 EXPOSE 25565
 
 # Start the Minecraft server
-CMD ["java", "-Xmx$MEMORY_SIZE", "-Xms$MEMORY_SIZE", "-jar", "server.jar", "nogui"]
+CMD ["sh", "-c", "java -Xmx${MEMORY_SIZE} -Xms${MEMORY_SIZE} -jar server.jar nogui"]
