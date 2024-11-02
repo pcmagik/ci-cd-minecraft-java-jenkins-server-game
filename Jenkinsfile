@@ -35,13 +35,8 @@ pipeline {
 
         stage('Update Minecraft Server Version') {
             steps {
-                // Instalacja zależności (requests)
-                sh 'pip3 install requests'
-
-                // Wykonaj skrypt, który pobiera najnowszy URL wersji Minecraft
-                sh 'python3 ${WORKSPACE}/scripts/get_latest_version.py > latest_url.txt'
+                sh './venv/bin/python scripts/get_latest_version.py > latest_url.txt'
                 
-                // Przypisz URL do zmiennej środowiskowej
                 script {
                     def latestUrl = readFile('latest_url.txt').trim()
                     env.SERVER_JAR_URL = latestUrl
