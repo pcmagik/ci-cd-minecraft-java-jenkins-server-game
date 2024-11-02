@@ -8,6 +8,31 @@ pipeline {
         PROD_SERVER_NAME = 'minecraft-server-prod'
         TEST_SERVER_NAME = 'minecraft-server-test'
     }
+
+
+    stages {
+        stage('Update Minecraft Server Version') {
+            steps {
+                // Wykonaj skrypt, który pobiera najnowszy URL wersji Minecraft
+                sh 'python3 scripts/get_latest_version.py > latest_url.txt'
+                
+                // Przypisz URL do zmiennej środowiskowej
+                script {
+                    def latestUrl = readFile('latest_url.txt').trim()
+                    env.SERVER_JAR_URL = latestUrl
+                }
+            }
+        }
+
+    stage('Build Docker Image') {
+            steps {
+                // Zbuduj obraz Docker, przekazując zmienną jako argument budowy
+                sh 'docker build --build-arg SERVER_JAR_URL=${SERVER_JAR_URL} -t minecraft-server:latest .'
+            }
+        }
+    }
+}
+
     stages {
         stage('Clone Repository') {
             steps {
