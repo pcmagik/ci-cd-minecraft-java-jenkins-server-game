@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
+        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-jenkins-server-game.git'
         IMAGE_NAME = 'minecraft-server:latest'
         NETWORK_NAME = 'jenkins'
         BACKUP_DIR = '/var/jenkins_home/minecraft-backups'
@@ -13,13 +13,26 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 git branch: 'main', url: "${REPO}", credentialsId: 'global_github_ssh'
+                // Wyświetl zawartość katalogu po klonowaniu, aby sprawdzić, czy wszystko jest dostępne
+                sh 'ls -R'
+            }
+        }
+
+        stage('Check Workspace') {
+            steps {
+                // Sprawdzenie, czy plik `get_latest_version.py` jest dostępny
+                sh 'ls -la'
+                sh 'ls -la scripts'
             }
         }
 
         stage('Update Minecraft Server Version') {
             steps {
+                // Instalacja zależności (requests)
+                sh 'pip3 install requests'
+
                 // Wykonaj skrypt, który pobiera najnowszy URL wersji Minecraft
-                sh 'python3 scripts/get_latest_version.py > latest_url.txt'
+                sh 'python3 ${WORKSPACE}/scripts/get_latest_version.py > latest_url.txt'
                 
                 // Przypisz URL do zmiennej środowiskowej
                 script {
@@ -28,6 +41,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Build Docker Image') {
             steps {
