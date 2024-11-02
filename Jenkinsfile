@@ -26,6 +26,12 @@ pipeline {
             }
         }
 
+        stage('Install Python Venv') {
+            steps {
+                sh 'apt-get update && apt-get install -y python3.11-venv'
+            }
+        }
+
         stage('Create Python Virtual Environment') {
             steps {
                 sh 'python3 -m venv venv'
@@ -36,7 +42,7 @@ pipeline {
         stage('Update Minecraft Server Version') {
             steps {
                 sh './venv/bin/python scripts/get_latest_version.py > latest_url.txt'
-                
+
                 script {
                     def latestUrl = readFile('latest_url.txt').trim()
                     env.SERVER_JAR_URL = latestUrl
