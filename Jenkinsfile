@@ -52,7 +52,7 @@ pipeline {
             steps {
                 script {
                     // Sprawdzanie dostępności portu 25567 na adresie hosta
-                    def hostIp = '127.0.0.1' // lub użyj bezpośredniego IP serwera hosta, jeśli nie jest uruchamiany lokalnie
+                    def hostIp = sh(script: "hostname -I | awk '{print \$1}'", returnStdout: true).trim() // lub użyj bezpośredniego IP serwera hosta, jeśli nie jest uruchamiany lokalnie
                     retry(5) {
                         if (sh(script: "nc -zv ${hostIp} 25567", returnStatus: true) != 0) {
                             echo "Port 25567 na adresie ${hostIp} nie jest dostępny. Próba ponowna."
