@@ -9,8 +9,13 @@ pipeline {
         TEST_SERVER_NAME = 'minecraft-server-test'
     }
 
-
     stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: "${REPO}", credentialsId: 'global_github_ssh'
+            }
+        }
+
         stage('Update Minecraft Server Version') {
             steps {
                 // Wykonaj skrypt, który pobiera najnowszy URL wersji Minecraft
@@ -24,28 +29,13 @@ pipeline {
             }
         }
 
-    stage('Build Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 // Zbuduj obraz Docker, przekazując zmienną jako argument budowy
                 sh 'docker build --build-arg SERVER_JAR_URL=${SERVER_JAR_URL} -t minecraft-server:latest .'
             }
         }
-    }
-}
 
-    stages {
-        stage('Clone Repository') {
-            steps {
-                git branch: 'main', url: "${REPO}", credentialsId: 'global_github_ssh'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    docker.build(IMAGE_NAME)
-                }
-            }
-        }
         stage('Test Docker Image') {
             steps {
                 script {
@@ -55,6 +45,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy to Test Environment') {
             steps {
                 script {
@@ -73,6 +64,7 @@ pipeline {
                 }
             }
         }
+
         stage('Automated Tests') {
             steps {
                 script {
@@ -93,6 +85,7 @@ pipeline {
                 }
             }
         }
+
         stage('Backup Existing Production') {
             steps {
                 script {
@@ -109,6 +102,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy to Production') {
             steps {
                 script {
@@ -134,6 +128,7 @@ pipeline {
                 }
             }
         }
+
         stage('Monitor production server') {
             steps {
                 script {
@@ -151,7 +146,8 @@ pipeline {
                 }
             }
         }
-    } // <- Zamyka sekcję stages
+    } // Zamyka sekcję stages
+    
     post {
         always {
             script {
