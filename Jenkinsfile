@@ -52,10 +52,10 @@ pipeline {
             steps {
                 script {
                     // Sprawdzanie dostępności portu 25567 na adresie hosta
-                    def testIp = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${TEST_SERVER_NAME}", returnStdout: true).trim()
+                    def hostIp = '127.0.0.1' // lub użyj bezpośredniego IP serwera hosta, jeśli nie jest uruchamiany lokalnie
                     retry(5) {
-                        if (sh(script: "nc -zv ${testIp} 25567", returnStatus: true) != 0) {
-                            echo "Port 25567 na adresie ${testIp} nie jest dostępny. Próba ponowna."
+                        if (sh(script: "nc -zv ${hostIp} 25567", returnStatus: true) != 0) {
+                            echo "Port 25567 na adresie ${hostIp} nie jest dostępny. Próba ponowna."
                             sleep(time: 10, unit: 'SECONDS')
                             error("Port 25567 nie jest dostępny, ponawiam test.")
                         }
