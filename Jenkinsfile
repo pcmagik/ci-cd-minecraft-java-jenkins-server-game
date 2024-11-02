@@ -109,24 +109,26 @@ pipeline {
                 }
             }
         }
-    stage('Monitor Production') {
-        steps {
-            script {
-                // Pobierz publiczny adres IP maszyny hostującej
-                def prodIp = sh(script: "curl -s ifconfig.me", returnStdout: true).trim()
-    
-                retry(3) {
-                    if (sh(script: "nc -zv ${prodIp} 25565", returnStatus: true) != 0) {
-                        echo "Serwer produkcyjny nie jest dostępny, ponawiam test."
-                        sleep(time: 10, unit: 'SECONDS')
-                        error("Serwer produkcyjny nie jest dostępny. Ponawiam próbę.")
-                    } else {
-                        echo "Serwer produkcyjny działa prawidłowo."
+        stage('Monitor production server') {
+            steps {
+                script {
+                    // Pobierz publiczny adres IP maszyny
+                    def hostIp = sh(script: "curl -s ifconfig.me", returnStdout: true).trim()
+
+                    // Sprawdzanie dostępności portu z zewnętrznej perspektywy
+                    retry(5) {
+                        if (sh(script: "nc -zv ${hostIp} 25565", returnStatus: true) != 0) {
+                            echo "Port 25565 na adresie ${hostIp} nie jest dostępny. Próba ponowna."
+                            sleep(time: 10, unit: 'SECONDS')
+                            error("Port 25565 nie jest dostępny, ponawiam test.")
+                        }
                     }
+                    // Usunięcie kontenera testowego po zakończeniu testów
+                    sh "docker stop ${TEST_SERVER_NAME} || true"
+                    sh "docker rm ${TEST_SERVER_NAME} || true"
                 }
             }
         }
-    }
     post {
         always {
             script {
