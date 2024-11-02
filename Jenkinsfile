@@ -52,12 +52,12 @@ pipeline {
             steps {
                 script {
                     // Pobierz publiczny adres IP maszyny
-                    def hostIp = sh(script: "curl -s ifconfig.me", returnStdout: true).trim()
+                    def testIP = sh(script: "curl -s ifconfig.me", returnStdout: true).trim()
 
                     // Sprawdzanie dostępności portu z zewnętrznej perspektywy
                     retry(5) {
-                        if (sh(script: "nc -zv ${hostIp} 25567", returnStatus: true) != 0) {
-                            echo "Port 25567 na adresie ${hostIp} nie jest dostępny. Próba ponowna."
+                        if (sh(script: "nc -zv ${testIP} 25567", returnStatus: true) != 0) {
+                            echo "Port 25567 na adresie ${testIP} nie jest dostępny. Próba ponowna."
                             sleep(time: 10, unit: 'SECONDS')
                             error("Port 25567 nie jest dostępny, ponawiam test.")
                         }
@@ -113,12 +113,12 @@ pipeline {
             steps {
                 script {
                     // Pobierz publiczny adres IP maszyny
-                    def hostIp = sh(script: "curl -s ifconfig.me", returnStdout: true).trim()
+                    def prodIP = sh(script: "curl -s ifconfig.me", returnStdout: true).trim()
 
                     // Sprawdzanie dostępności portu z zewnętrznej perspektywy
                     retry(5) {
-                        if (sh(script: "nc -zv ${hostIp} 25565", returnStatus: true) != 0) {
-                            echo "Port 25565 na adresie ${hostIp} nie jest dostępny. Próba ponowna."
+                        if (sh(script: "nc -zv ${prodIP} 25565", returnStatus: true) != 0) {
+                            echo "Port 25565 na adresie ${prodIP} nie jest dostępny. Próba ponowna."
                             sleep(time: 10, unit: 'SECONDS')
                             error("Port 25565 nie jest dostępny, ponawiam test.")
                         }
