@@ -51,8 +51,8 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                    // Użycie adresu Docker Gateway na hosta
-                    def hostIp = 'host.docker.internal'
+                    // Wykrywanie adresu IP maszyny hostującej
+                    def hostIp = sh(script: "ip route | awk '/default/ { print \$3 }'", returnStdout: true).trim()
         
                     retry(5) {
                         if (sh(script: "nc -zv ${hostIp} 25567", returnStatus: true) != 0) {
