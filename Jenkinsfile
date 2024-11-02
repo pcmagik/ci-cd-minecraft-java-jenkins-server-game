@@ -26,6 +26,13 @@ pipeline {
             }
         }
 
+        stage('Create Python Virtual Environment') {
+            steps {
+                sh 'python3 -m venv venv'
+                sh './venv/bin/pip install requests'
+            }
+        }
+
         stage('Update Minecraft Server Version') {
             steps {
                 // Instalacja zależności (requests)
@@ -41,7 +48,6 @@ pipeline {
                 }
             }
         }
-
 
         stage('Build Docker Image') {
             steps {
