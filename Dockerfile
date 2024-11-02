@@ -4,24 +4,25 @@
 FROM openjdk:21-jdk-slim
 
 # Set environment variables
-ENV MINECRAFT_VERSION=1.21.1 \
-    MINECRAFT_SERVER_DIR=/opt/minecraft \
+ENV MINECRAFT_SERVER_DIR=/opt/minecraft \
     MEMORY_SIZE=2G
 
-# Install wget using apt-get
-USER root
-RUN apt-get update && apt-get install wget -y
+# Define build argument for server URL
+ARG SERVER_JAR_URL
 
-# Create the Minecraft directory
-RUN mkdir -p $MINECRAFT_SERVER_DIR
+# Install wget using apt-get in a single RUN command to reduce image layers
+RUN apt-get update && apt-get install -y wget && \
+    mkdir -p $MINECRAFT_SERVER_DIR && \
+    apt-get clean
 
+# Set working directory
 WORKDIR $MINECRAFT_SERVER_DIR
 
 # Copy server.properties from the local machine to the container
 COPY server.properties $MINECRAFT_SERVER_DIR/
 
-# Download the Minecraft server jar
-RUN wget -O server.jar https://piston-data.mojang.com/v1/objects/45810d238246d90e811d896f87b14695b7fb6839/server.jar
+# Download the Minecraft server jar using the argument provided
+RUN wget -O server.jar ${SERVER_JAR_URL}
 
 # Accept the EULA by adding a configuration file
 RUN echo "eula=true" > eula.txt
