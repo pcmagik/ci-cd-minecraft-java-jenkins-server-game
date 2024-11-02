@@ -3,25 +3,25 @@
 # Start with the official OpenJDK 21 image as a base
 FROM openjdk:21-jdk-slim
 
+# Set build argument for Minecraft server JAR URL
+ARG SERVER_JAR_URL
+
 # Set environment variables
 ENV MINECRAFT_SERVER_DIR=/opt/minecraft \
     MEMORY_SIZE=2G
 
-# Define build argument for server URL
-ARG SERVER_JAR_URL
+# Install wget using apt-get
+RUN apt-get update && apt-get install wget -y
 
-# Install wget using apt-get in a single RUN command to reduce image layers
-RUN apt-get update && apt-get install -y wget && \
-    mkdir -p $MINECRAFT_SERVER_DIR && \
-    apt-get clean
+# Create the Minecraft directory
+RUN mkdir -p $MINECRAFT_SERVER_DIR
 
-# Set working directory
 WORKDIR $MINECRAFT_SERVER_DIR
 
 # Copy server.properties from the local machine to the container
 COPY server.properties $MINECRAFT_SERVER_DIR/
 
-# Download the Minecraft server jar using the argument provided
+# Download the Minecraft server jar using the URL provided in build argument
 RUN wget -O server.jar ${SERVER_JAR_URL}
 
 # Accept the EULA by adding a configuration file
