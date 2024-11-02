@@ -123,12 +123,10 @@ pipeline {
                             error("Port 25565 nie jest dostępny, ponawiam test.")
                         }
                     }
-                    // Usunięcie kontenera testowego po zakończeniu testów
-                    sh "docker stop ${TEST_SERVER_NAME} || true"
-                    sh "docker rm ${TEST_SERVER_NAME} || true"
                 }
             }
         }
+    } // <- Zamyka sekcję stages
     post {
         always {
             script {
@@ -144,4 +142,3 @@ pipeline {
         }
     }
 }
-
