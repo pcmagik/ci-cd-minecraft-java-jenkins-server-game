@@ -51,9 +51,10 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 script {
-                    // Wykrywanie adresu IP maszyny hostującej
-                    def hostIp = sh(script: "ip route | awk '/default/ { print \$3 }'", returnStdout: true).trim()
+                    // Pobierz publiczny adres IP maszyny
+                    def hostIp = sh(script: "curl -s ifconfig.me", returnStdout: true).trim()
         
+                    // Sprawdzanie dostępności portu z zewnętrznej perspektywy
                     retry(5) {
                         if (sh(script: "nc -zv ${hostIp} 25567", returnStatus: true) != 0) {
                             echo "Port 25567 na adresie ${hostIp} nie jest dostępny. Próba ponowna."
