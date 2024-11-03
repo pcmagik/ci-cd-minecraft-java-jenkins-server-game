@@ -1,26 +1,62 @@
 pipeline {
     agent any
     environment {
-        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-server.git'
+        REPO = 'https://github.com/pcmagik/ci-cd-minecraft-jenkins-server-game.git'
         IMAGE_NAME = 'minecraft-server:latest'
         NETWORK_NAME = 'jenkins'
         BACKUP_DIR = '/var/jenkins_home/minecraft-backups'
         PROD_SERVER_NAME = 'minecraft-server-prod'
         TEST_SERVER_NAME = 'minecraft-server-test'
     }
+
     stages {
         stage('Clone Repository') {
             steps {
                 git branch: 'main', url: "${REPO}", credentialsId: 'global_github_ssh'
+                // Wyświetl zawartość katalogu po klonowaniu, aby sprawdzić, czy wszystko jest dostępne
+                sh 'ls -R'
             }
         }
-        stage('Build Docker Image') {
+
+        stage('Check Workspace') {
             steps {
+                // Sprawdzenie, czy plik `get_latest_version.py` jest dostępny
+                sh 'ls -la'
+                sh 'ls -la scripts'
+            }
+        }
+
+        stage('Install Python Venv') {
+            steps {
+                sh 'apt-get update && apt-get install -y python3.11-venv'
+            }
+        }
+
+        stage('Create Python Virtual Environment') {
+            steps {
+                sh 'python3 -m venv venv'
+                sh './venv/bin/pip install requests'
+            }
+        }
+
+        stage('Update Minecraft Server Version') {
+            steps {
+                sh './venv/bin/python scripts/get_latest_version.py > latest_url.txt'
+
                 script {
-                    docker.build(IMAGE_NAME)
+                    def latestUrl = readFile('latest_url.txt').trim()
+                    env.SERVER_JAR_URL = latestUrl
                 }
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                // Zbuduj obraz Docker, przekazując zmienną jako argument budowy
+                sh 'docker build --build-arg SERVER_JAR_URL=${SERVER_JAR_URL} -t minecraft-server:latest .'
+            }
+        }
+
         stage('Test Docker Image') {
             steps {
                 script {
@@ -30,6 +66,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy to Test Environment') {
             steps {
                 script {
@@ -48,6 +85,7 @@ pipeline {
                 }
             }
         }
+
         stage('Automated Tests') {
             steps {
                 script {
@@ -68,6 +106,7 @@ pipeline {
                 }
             }
         }
+
         stage('Backup Existing Production') {
             steps {
                 script {
@@ -84,6 +123,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy to Production') {
             steps {
                 script {
@@ -109,6 +149,7 @@ pipeline {
                 }
             }
         }
+
         stage('Monitor production server') {
             steps {
                 script {
@@ -126,7 +167,8 @@ pipeline {
                 }
             }
         }
-    } // <- Zamyka sekcję stages
+    } // Zamyka sekcję stages
+    
     post {
         always {
             script {
