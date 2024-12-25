@@ -9,7 +9,19 @@ pipeline {
         TEST_SERVER_NAME = 'minecraft-server-test'
     }
 
+    options {
+        // Add cleanup before build starts by disabling automatic checkout
+        skipDefaultCheckout(true)
+    }
+
     stages {
+        // Dodaj etap czyszczenia workspace przed rozpoczęciem buildu
+        stage('Cleanup Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Clone Repository') {
             steps {
                 git branch: 'main', url: "${REPO}", credentialsId: 'global_github_ssh'
@@ -173,6 +185,8 @@ pipeline {
         always {
             script {
                 sh "docker rmi ${IMAGE_NAME} --force || true"
+                // Dodaj czyszczenie workspace po zakończeniu buildu
+                cleanWs()
             }
         }
         failure {
